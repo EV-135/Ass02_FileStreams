@@ -1,6 +1,13 @@
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Objects;
 
 public class Product {
+    public static final int NAME_LENGTH = 35;
+    public static final int DESCRIPTION_LENGTH = 75;
+    public static final int ID_LENGTH = 6;
+    public static final int RECORD_SIZE = (NAME_LENGTH + DESCRIPTION_LENGTH + ID_LENGTH) * 2 + 8;
+
     String ID;
     String name;
     String description;
@@ -43,6 +50,56 @@ public class Product {
 
     public void setCost(double cost) {
         this.cost = cost;
+    }
+
+    private static String padRight(String value, int length){
+        if(value.length() > length){
+            throw new IllegalArgumentException("Text exceeds maximum length of " + length);
+        }
+        return String.format("%-" + length + "s", value);
+    }
+
+    public String getPaddedName(){
+        return padRight(name, NAME_LENGTH);
+    }
+
+    public String getPaddedDescription(){
+        return padRight(description, DESCRIPTION_LENGTH);
+    }
+
+    public String getPaddedID(){
+        return padRight(ID, ID_LENGTH);
+    }
+
+    public String getRandomAccessRecord(){
+        return getPaddedName() + getPaddedDescription() + getPaddedID();
+    }
+
+    public void writeTo(RandomAccessFile file) throws IOException {
+        file.writeChars(getPaddedName());
+        file.writeChars(getPaddedDescription());
+        file.writeChars(getPaddedID());
+        file.writeDouble(cost);
+    }
+
+    public static Product readFrom(RandomAccessFile file) throws IOException {
+        String name = readFixedString(file, NAME_LENGTH).trim();
+        String description = readFixedString(file, DESCRIPTION_LENGTH).trim();
+        String ID = readFixedString(file, ID_LENGTH).trim();
+        double cost = file.readDouble();
+
+        return new Product(ID, name, description, cost);
+    }
+
+    private static String readFixedString(RandomAccessFile file, int length) throws IOException {
+
+        StringBuilder value = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            value.append(file.readChar());
+        }
+
+        return value.toString();
     }
 
     @Override
